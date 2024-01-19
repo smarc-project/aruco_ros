@@ -29,6 +29,7 @@ or implied, of Rafael Muñoz Salinas.
 #include "dictionary_based.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <bitset>
 #include <cmath>
 #include "aruco_cvversioning.h"
@@ -52,7 +53,8 @@ void DictionaryBased::setParams(const Dictionary& dic, float max_correction_rate
   for (auto& dic : vdic)
     nbits_dict[dic.nbits()].push_back(&dic);
 
-  _max_correction_rate = std::max(0.f, std::min(1.0f, max_correction_rate));
+  // _max_correction_rate = std::max(0.f, std::min(1.0f, max_correction_rate));
+  _max_correction_rate = std::max(0.f, max_correction_rate); // Nacho
 }
 
 std::string DictionaryBased::getName() const
@@ -90,7 +92,9 @@ bool DictionaryBased::detect(const cv::Mat& in, int& marker_id, int& nRotations,
     cv::cvtColor(in, grey, CV_BGR2GRAY);
   // threshold image
   cv::threshold(grey, grey, 125, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
-
+  // cv::namedWindow("Thresholded",cv::WINDOW_NORMAL);
+  // cv::imshow("Thresholded",grey);
+  // cv::waitKey(0);
 
   std::map<uint32_t, std::vector<uint64_t> > nbits_ids;
   // for each
@@ -109,8 +113,10 @@ bool DictionaryBased::detect(const cv::Mat& in, int& marker_id, int& nRotations,
   }
   // how many  are there?
 
-  if (nbits_ids.size() == 0)
+  if (nbits_ids.size() == 0){
+    // std::cout << "Not enough bits found " << std::endl;
     return false;
+  }
   // check if any dictionary recognizes it
   for (auto nbits : nbits_ids)
   {
@@ -120,6 +126,7 @@ bool DictionaryBased::detect(const cv::Mat& in, int& marker_id, int& nRotations,
     {
       // try a perfecf match
       for (int rot = 0; rot < 4; rot++)
+      {
         if (dic->is(ids[rot]))
         {
           //  std::cout<<"MATCH:"<<dic->getName()<<" "<<ids[rot]<<std::endl;
@@ -128,10 +135,12 @@ bool DictionaryBased::detect(const cv::Mat& in, int& marker_id, int& nRotations,
           additionalInfo = dic->getName();
           return true;
         }
+      }
 
       // try with some error/correction if allowed
       if (_max_correction_rate > 0)
       {  // find distance to map elements
+
         int _maxCorrectionAllowed =
             static_cast<int>(static_cast<float>(dic->tau()) * _max_correction_rate);
 
@@ -145,7 +154,7 @@ bool DictionaryBased::detect(const cv::Mat& in, int& marker_id, int& nRotations,
             if (curr_dist < _maxCorrectionAllowed && curr_dist < min_dist)
             {
               found = true;
-              min_dist = curr_dist;
+              // min_dist = curr_dist;
               marker_id = ci.second;
               nRotations = i;
               additionalInfo = dic->getName();
@@ -203,8 +212,10 @@ bool DictionaryBased::getInnerCode(const cv::Mat& thres_img, int total_nbits,
     if (y == 0 || y == bits_withborder - 1)
       inc = 1;  // for first and last row, check the whole border
     for (int x = 0; x < bits_withborder; x += inc)
-      if (binaryCode.at<uchar>(y, x) != 0)
+      if (binaryCode.at<uchar>(y, x) != 0){
+        // std::cout << "Border isn't completely black " << std::endl;
         return false;
+      }
   }
 
   // take the inner code

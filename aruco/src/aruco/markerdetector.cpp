@@ -400,7 +400,7 @@ MarkerDetector::ThresMethod MarkerDetector::Params::getCornerThresMethodFromStri
 void MarkerDetector::Params::setThresholdMethod(MarkerDetector::ThresMethod method,
                                                 int thresHold, int wsize, int wsize_range)
 {
-  AdaptiveThresWindowSize = wsize;
+  // AdaptiveThresWindowSize = wsize;
   thresMethod = method;
   if (thresHold == -1)
   {
@@ -411,7 +411,7 @@ void MarkerDetector::Params::setThresholdMethod(MarkerDetector::ThresMethod meth
   }
   else
     ThresHold = thresHold;
-  AdaptiveThresWindowSize_range = wsize_range;
+  // AdaptiveThresWindowSize_range = wsize_range;
 }
 void MarkerDetector::Params::setDetectionMode(DetectionMode dm, float minMarkerSize)
 {

@@ -33,7 +33,7 @@ Copyright 2020 Rafael Muñoz Salinas. All rights reserved.
 //#include "picoflann.h"
 
 //#ifdef _DEBUG
-//#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
 //#endif
 using namespace std;
 using namespace cv;
@@ -559,6 +559,7 @@ vector<aruco::MarkerDetector_Impl::MarkerCandidate> MarkerDetector_Impl::thresho
   // compute the different values of param1
 
   int adaptiveWindowSize = _params.AdaptiveThresWindowSize;
+  // int adaptiveWindowSize = 30;
   if (_params.AdaptiveThresWindowSize == -1)
     adaptiveWindowSize = max(int(3), int(15 * float(image.cols) / 1920.));
   if (adaptiveWindowSize % 2 == 0)
@@ -871,14 +872,15 @@ void MarkerDetector_Impl::detect(const cv::Mat &input, std::vector<Marker> &dete
 
     __ARUCO_TIMER_EVENT__("Threshold and Detect rectangles");
     // prefilter candidates
-    //        _debug_exec(10,//only executes when compiled in DEBUG mode if debug level is at least 10
-    //                    //show the thresholded images
-    //                    cv::Mat imrect;
-    //                cv::cvtColor(imgToBeThresHolded,imrect,CV_GRAY2BGR);
-    //        for(auto m: MarkerCanditates )
-    //            m.draw(imrect,cv::Scalar(0,245,0));
-    //        cv::imshow("rect-nofiltered",imrect);
-    //        );
+          //  _debug_exec(10,//only executes when compiled in DEBUG mode if debug level is at least 10
+                       //show the thresholded images
+                       cv::Mat imrect;
+                   cv::cvtColor(imgToBeThresHolded,imrect,CV_GRAY2BGR);
+           for(auto m: MarkerCanditates )
+               m.draw(imrect,cv::Scalar(0,245,0));
+           cv::imshow("rect-nofiltered",imrect);
+           cv::waitKey(1);
+          //  );
 
     MarkerCanditates = prefilterCandidates(MarkerCanditates, imgToBeThresHolded.size());
 
@@ -886,12 +888,15 @@ void MarkerDetector_Impl::detect(const cv::Mat &input, std::vector<Marker> &dete
 
     //        _debug_exec(10,//only executes when compiled in DEBUG mode if debug level is at least 10
     //                    //show the thresholded images
-    //                    cv::Mat imrect;
-    //                cv::cvtColor(imgToBeThresHolded,imrect,CV_GRAY2BGR);
-    //        for(auto m: MarkerCanditates)
-    //            m.draw(imrect,cv::Scalar(0,245,0));
-    //        cv::imshow("rect-filtered",imrect);
-    //        );
+          //              cv::Mat imrect;
+          //          cv::cvtColor(imgToBeThresHolded,imrect,CV_GRAY2BGR);
+          //  for(auto m: MarkerCanditates)
+          //      m.draw(imrect,cv::Scalar(0,245,0));
+          //  cv::imshow("rect-filtered",imrect);
+          //  cv::waitKey(1);
+
+          //  );
+
     // before going on, make sure the piramid is built
     if (buildPyramidThread.joinable())
       buildPyramidThread.join();
@@ -944,14 +949,16 @@ void MarkerDetector_Impl::detect(const cv::Mat &input, std::vector<Marker> &dete
       string additionalInfo;
       //            _debug_exec(10,//only executes when compiled in DEBUG mode if debug
       //            level is at least 10
-      //                        //show the thresholded images
-      //                        stringstream sstr;sstr<<"test-"<<i;
-      //            cout  <<"test"<<i<<endl;
-      //            cv::namedWindow(sstr.str(),cv::WINDOW_NORMAL);
-      //            cv::imshow(sstr.str(),canonicalMarkerAux);
-      //            cv::waitKey(0);
+                             //show the thresholded images
+                //              stringstream sstr;sstr<<"test-"<<i;
+                //  cout  <<"test"<<i<<endl;
+                //  cv::namedWindow(sstr.str(),cv::WINDOW_NORMAL);
+                //  cv::imshow(sstr.str(),canonicalMarkerAux);
+                //  cv::waitKey(0);
       //             );
-      if (markerIdDetector->detect(canonicalMarkerAux, id, nRotations, additionalInfo))
+      bool detected = markerIdDetector->detect(canonicalMarkerAux, id, nRotations, additionalInfo);
+      // cout  <<"detected "<<detected<<endl;
+      if (detected)
       {
         detectedMarkers.push_back(MarkerCanditates[i]);
         detectedMarkers.back().id = id;

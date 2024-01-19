@@ -79,8 +79,8 @@ private:
   std_msgs::UInt32MultiArray marker_list_msg_;
 
 public:
-  ArucoMarkerPublisher() :
-      nh_("~"), it_(nh_), useCamInfo_(true)
+  ArucoMarkerPublisher(float max_correction_rate) :
+      nh_("~"), it_(nh_), useCamInfo_(true), mDetector_(aruco::Dictionary::DICT_TYPES::ARUCO, max_correction_rate)
   {
     image_sub_ = it_.subscribe("/image", 1, &ArucoMarkerPublisher::image_callback, this);
 
@@ -93,6 +93,8 @@ public:
       nh_.param<bool>("image_is_rectified", useRectifiedImages_, true);
       nh_.param<std::string>("reference_frame", reference_frame_, "");
       nh_.param<std::string>("camera_frame", camera_frame_, "");
+      ROS_INFO_STREAM("Camera frame " << camera_frame_);
+      ROS_INFO_STREAM("Reference frame " << reference_frame_);
       camParam_ = aruco_ros::rosCameraInfo2ArucoCamParams(*msg, useRectifiedImages_);
       ROS_ASSERT(not (camera_frame_.empty() and not reference_frame_.empty()));
       if (reference_frame_.empty())
@@ -102,6 +104,50 @@ public:
     {
       camParam_ = aruco::CameraParameters();
     }
+
+    aruco::MarkerDetector::Params params;
+    params.maxThreads = -1; // Allow all
+    params.enclosedMarker = false; // Not our case
+    params.AdaptiveThresWindowSize = 15; // This one doens't seem to be read from params. Fixed
+    params.AdaptiveThresWindowSize_range = 3; // This one doens't seem to be read from params. Fixed
+    params.lowResMarkerSize = 20; // Potentially useful
+    params.borderDistThres = 0.015f;
+    params.thresMethod = aruco::MarkerDetector::ThresMethod::THRES_ADAPTIVE; 
+    mDetector_.setParameters(params);
+
+    // aruco::MarkerDetector::Params params = mDetector_.getParameters();
+    // std::string thresh_method;
+    // switch (params.thresMethod)
+    // {
+    //   case aruco::MarkerDetector::ThresMethod::THRES_ADAPTIVE:
+    //     thresh_method = "THRESH_ADAPTIVE";
+    //     break;
+    //   case aruco::MarkerDetector::ThresMethod::THRES_AUTO_FIXED:
+    //     thresh_method = "THRESH_AUTO_FIXED";
+    //     break;
+    //   default:
+    //     thresh_method = "UNKNOWN";
+    //     break;
+    // }
+
+    // Print parameters of ArUco marker detector:
+    // ROS_INFO_STREAM("Threshold method: " << thresh_method);
+
+    float min_marker_size; // percentage of image area
+    nh_.param<float>("min_marker_size", min_marker_size, 0.001);
+
+    std::string detection_mode;
+    nh_.param<std::string>("detection_mode", detection_mode, "DM_NORMAL");
+    if (detection_mode == "DM_FAST")
+      mDetector_.setDetectionMode(aruco::DM_FAST, min_marker_size);
+    else if (detection_mode == "DM_VIDEO_FAST")
+      mDetector_.setDetectionMode(aruco::DM_VIDEO_FAST, min_marker_size);
+    else
+      // Aruco version 2 mode
+      mDetector_.setDetectionMode(aruco::DM_NORMAL, min_marker_size);
+
+    ROS_INFO_STREAM("Marker size min: " << min_marker_size << "% of image area");
+    ROS_INFO_STREAM("Detection mode: " << detection_mode);
 
     image_pub_ = it_.advertise("result", 1);
     debug_pub_ = it_.advertise("debug", 1);
@@ -262,8 +308,10 @@ public:
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "aruco_marker_publisher");
-
-  ArucoMarkerPublisher node;
+  ros::NodeHandle nh;
+  float max_correction_rate;
+  nh.param<float>("max_correction_rate", max_correction_rate, 0.);
+  ArucoMarkerPublisher node(max_correction_rate);
 
   ros::spin();
 }

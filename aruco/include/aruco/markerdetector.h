@@ -210,7 +210,9 @@ public:
 
 
     // Threshold parameters
-    int AdaptiveThresWindowSize = -1, ThresHold = 7, AdaptiveThresWindowSize_range = 0;
+    int AdaptiveThresWindowSize = -1;
+    int ThresHold = 7;
+    int AdaptiveThresWindowSize_range = 0;
     // size of the image passedta to the MarkerLabeler
     int markerWarpPixSize = 5;  // tau_c in paper
 
